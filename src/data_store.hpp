@@ -1,7 +1,7 @@
 #include <string>
 #include <unordered_map>
 
-class datastore {
+class DataStore {
  private:
   std::unordered_map<std::string, std::string> cache;
 

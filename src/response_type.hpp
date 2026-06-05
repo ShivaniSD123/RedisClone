@@ -1,0 +1,1 @@
+enum class response_type { SIMPLE_STRING, BULK_STRING, INTEGER, ERROR }
