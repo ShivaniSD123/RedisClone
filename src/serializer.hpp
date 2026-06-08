@@ -2,12 +2,9 @@
 
 #include <string>
 
+#include "dispacher.hpp"
 #include "response_type.hpp"
 
-struct Response {
-  response_type type;
-  std::string value;
-};
 class Serializer {
  private:
   std::string respFormatConvert(const Response& response) {
