@@ -1,0 +1,16 @@
+# =========================
+# C++ Object Files
+# =========================
+*.o
+*.obj
+
+# =========================
+# Executables
+# =========================
+*.out
+*.exe
+
+# Common executable names
+server
+redis_clone
+main
