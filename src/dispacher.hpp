@@ -25,6 +25,7 @@ class Dispatcher {
   }
   void del_value(const std::string& key) { d.remove(key); }
   bool check(const std::string& key) { return d.find(key); }
+  int getTTL(const std::string& key) { return d.getTTL(key); }
   Response execute(const std::vector<std::string>& cmd) {
     if (cmd.empty()) return {response_type::ERROR, "INVALID COMMAND"};
     const std::string& token = cmd[0];
@@ -55,6 +56,10 @@ class Dispatcher {
       if (cmd.size() != 2) return {response_type::ERROR, "INVALID COMMAND"};
       const std::string& key = cmd[1];
       return {response_type::INTEGER, check(key) ? "1" : "0"};
+    } else if (token == "TTL") {
+      if (cmd.size() != 2) return {response_type::ERROR, "INVALID COMMAND"};
+      const std::string key = cmd[1];
+      return {response_type::INTEGER, std::to_string(getTTL(key))};
     } else
       return {response_type::ERROR, "INVALID COMMAND"};
   }
