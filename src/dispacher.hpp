@@ -26,6 +26,9 @@ class Dispatcher {
   void del_value(const std::string& key) { d.remove(key); }
   bool check(const std::string& key) { return d.find(key); }
   int getTTL(const std::string& key) { return d.getTTL(key); }
+  void changeTTL(const std::string& key, long long time) {
+    d.changeTTL(key, time);
+  }
   Response execute(const std::vector<std::string>& cmd) {
     if (cmd.empty()) return {response_type::ERROR, "INVALID COMMAND"};
     const std::string& token = cmd[0];
@@ -60,6 +63,12 @@ class Dispatcher {
       if (cmd.size() != 2) return {response_type::ERROR, "INVALID COMMAND"};
       const std::string key = cmd[1];
       return {response_type::INTEGER, std::to_string(getTTL(key))};
+    } else if (token == "EXPIRE") {
+      if (cmd.size() != 3) return {response_type::ERROR, "INVALID COMMAND"};
+      const std::string key = cmd[1];
+      long long time = stoll(cmd[2]);
+      changeTTL(key, time);
+      return {response_type::SIMPLE_STRING, "OK"};
     } else
       return {response_type::ERROR, "INVALID COMMAND"};
   }

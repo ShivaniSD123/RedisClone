@@ -27,34 +27,15 @@ class TCPServer {
 
   void start() {
     int server_fd = socket(AF_INET, SOCK_STREAM, 0);
-    if (server_fd < 0) {
-      std::perror("socket");
-      return;
-    }
-
-    int opt = 1;
-    if (setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) < 0) {
-      std::perror("setsockopt");
-      close(server_fd);
-      return;
-    }
 
     sockaddr_in server_addr{};
     server_addr.sin_family = AF_INET;
     server_addr.sin_addr.s_addr = INADDR_ANY;
     server_addr.sin_port = htons(port);
 
-    if (bind(server_fd, (sockaddr*)&server_addr, sizeof(server_addr)) < 0) {
-      std::perror("bind");
-      close(server_fd);
-      return;
-    }
+    bind(server_fd, (sockaddr*)&server_addr, sizeof(server_addr));
 
-    if (listen(server_fd, 5) < 0) {
-      std::perror("listen");
-      close(server_fd);
-      return;
-    }
+    listen(server_fd, 5);
 
     std::cout << "Server listening on port " << port << "\n";
 
@@ -62,40 +43,30 @@ class TCPServer {
       int client_fd = accept(server_fd, nullptr, nullptr);
 
       char buffer[4096];
-      std::string recvBuf;
 
       while (true) {
+        memset(buffer, 0, sizeof(buffer));
+
         int bytes = recv(client_fd, buffer, sizeof(buffer), 0);
-        if (bytes < 0) {
-          std::perror("recv");
-          break;
-        }
-        if (bytes == 0) break; // client closed
 
-        recvBuf.append(buffer, buffer + bytes);
+        if (bytes <= 0) break;
 
-        // simple heuristic: only attempt parse when we see CRLF and leading '*'
-        if (recvBuf.size() > 0 && recvBuf[0] == '*' && recvBuf.find("\r\n") != std::string::npos) {
-          try {
-            auto command = parser.parser(recvBuf);
-            Response response = dispatcher.execute(command);
-            std::string resp = serializer.execute(response);
-            if (send(client_fd, resp.c_str(), resp.size(), 0) < 0) {
-              std::perror("send");
-              break;
-            }
-            // assume one command per buffer for now; clear buffer
-            recvBuf.clear();
-          } catch (const std::exception& e) {
-            // parser failed; send error response and clear buffer
-            Response response{response_type::ERROR, e.what()};
-            std::string resp = serializer.execute(response);
-            if (send(client_fd, resp.c_str(), resp.size(), 0) < 0) {
-              std::perror("send");
-              break;
-            }
-            recvBuf.clear();
-          }
+        std::string input(buffer, bytes);
+
+        try {
+          auto command = parser.parser(input);
+
+          Response response = dispatcher.execute(command);
+
+          std::string resp = serializer.execute(response);
+
+          send(client_fd, resp.c_str(), resp.size(), 0);
+        } catch (const std::exception& e) {
+          Response response{response_type::ERROR, e.what()};
+
+          std::string resp = serializer.execute(response);
+
+          send(client_fd, resp.c_str(), resp.size(), 0);
         }
       }
 
