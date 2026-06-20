@@ -73,11 +73,17 @@ class DataStore {
     cache.erase(key);
     return -2;
   }
-  void changeTTL(std::string key, long long time) {
+  int changeTTL(const std::string key, long long time) {
+    if (cache.find(key) == cache.end()) return 0;
+    if (isExpired(key)) {
+      cache.erase(key);
+      return 0;
+    }
     auto now = std::chrono::system_clock::now();
     long long currentTime =
         std::chrono::duration_cast<std::chrono::seconds>(now.time_since_epoch())
             .count();
     cache[key].expiryTime = currentTime + time;
+    return 1;
   }
 };
