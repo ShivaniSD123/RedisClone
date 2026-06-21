@@ -1,4 +1,5 @@
 
+#include <netinet/in.h>
 #include <sys/socket.h>
 #include <unistd.h>
 
@@ -6,24 +7,30 @@
 #include <iostream>
 #include <string>
 
+#include "aof_manager.hpp"
 #include "data_store.hpp"
 #include "dispacher.hpp"
 #include "resp_parser.hpp"
 #include "serializer.hpp"
-#include <netinet/in.h>
 
 class TCPServer {
  private:
   int port;
 
   DataStore store;
+  AOFManager aof;
   RESPParser parser;
   Dispatcher dispatcher;
   Serializer serializer;
 
  public:
   TCPServer(int port)
-      : port(port), store(), parser(), dispatcher(store), serializer() {}
+      : port(port),
+        store(),
+        aof(),
+        parser(),
+        dispatcher(store, aof),
+        serializer() {}
 
   void start() {
     int server_fd = socket(AF_INET, SOCK_STREAM, 0);

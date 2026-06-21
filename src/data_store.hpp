@@ -73,7 +73,7 @@ class DataStore {
     cache.erase(key);
     return -2;
   }
-  int changeTTL(const std::string key, long long time) {
+  int changeTTL(const std::string& key, long long time) {
     if (cache.find(key) == cache.end()) return 0;
     if (isExpired(key)) {
       cache.erase(key);

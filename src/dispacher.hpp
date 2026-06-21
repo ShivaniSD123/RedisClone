@@ -4,6 +4,7 @@
 #include <unordered_map>
 #include <vector>
 
+#include "aof_manager.hpp"
 #include "data_store.hpp"
 #include "response_type.hpp"
 
@@ -14,9 +15,10 @@ struct Response {
 class Dispatcher {
  private:
   DataStore& d;
+  AOFManager& a;
 
  public:
-  Dispatcher(DataStore& store) : d(store) {}
+  Dispatcher(DataStore& store, AOFManager& a) : d(store), a(a) {}
 
   std::string get_value(const std::string& key) { return d.get(key); }
   void set_value(const std::string& key, const std::string& value,
@@ -47,6 +49,7 @@ class Dispatcher {
         expiryTime = stoll(cmd[4]);
       }
       set_value(key, value, expiryTime);
+      a.append(cmd);
       return {response_type::SIMPLE_STRING, "OK"};
     } else if (token == "PING") {
       if (cmd.size() != 1) return {response_type::ERROR, "INVALID COMMAND"};
@@ -54,6 +57,7 @@ class Dispatcher {
     } else if (token == "DEL") {
       if (cmd.size() != 2) return {response_type::ERROR, "INVALID COMMAND"};
       del_value(cmd[1]);
+      a.append(cmd);
       return {response_type::SIMPLE_STRING, "OK"};
     } else if (token == "EXISTS") {
       if (cmd.size() != 2) return {response_type::ERROR, "INVALID COMMAND"};
@@ -67,6 +71,7 @@ class Dispatcher {
       if (cmd.size() != 3) return {response_type::ERROR, "INVALID COMMAND"};
       const std::string key = cmd[1];
       long long time = stoll(cmd[2]);
+      a.append(cmd);
       return {response_type::INTEGER, std::to_string(changeTTL(key, time))};
     } else
       return {response_type::ERROR, "INVALID COMMAND"};
