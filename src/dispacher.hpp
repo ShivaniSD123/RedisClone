@@ -16,6 +16,12 @@ class Dispatcher {
  private:
   DataStore& d;
   AOFManager& a;
+  long long getCurrentTime() const {
+    auto now = std::chrono::system_clock::now();
+    return std::chrono::duration_cast<std::chrono::seconds>(
+               now.time_since_epoch())
+        .count();
+  }
 
  public:
   Dispatcher(DataStore& store, AOFManager& a) : d(store), a(a) {}
@@ -43,13 +49,24 @@ class Dispatcher {
       const std::string& key = cmd[1];
       const std::string& value = cmd[2];
       long long expiryTime = -1;
+      long long time = -1;
 
       if (cmd.size() == 5) {
         if (cmd[3] != "EX") return {response_type::ERROR, "INVALID COMMAND"};
         expiryTime = stoll(cmd[4]);
+        time = getCurrentTime();
+        time += expiryTime;
       }
       set_value(key, value, expiryTime);
-      a.append(cmd);
+      if (cmd.size() == 3) a.append(cmd);
+      if (cmd.size() == 5) {
+        std::vector<std::string> modCmd = cmd;
+        if (expiryTime == -1)
+          modCmd[4] = std::to_string(-1);
+        else
+          modCmd[4] = std::to_string(time);
+        a.append(modCmd);
+      }
       return {response_type::SIMPLE_STRING, "OK"};
     } else if (token == "PING") {
       if (cmd.size() != 1) return {response_type::ERROR, "INVALID COMMAND"};
@@ -71,8 +88,14 @@ class Dispatcher {
       if (cmd.size() != 3) return {response_type::ERROR, "INVALID COMMAND"};
       const std::string key = cmd[1];
       long long time = stoll(cmd[2]);
-      a.append(cmd);
-      return {response_type::INTEGER, std::to_string(changeTTL(key, time))};
+      long long currentTime = getCurrentTime();
+      int result = changeTTL(key, time);
+      if (result == 1) {
+        std::vector<std::string> modCmd = cmd;
+        modCmd[2] = std::to_string(time + currentTime);
+        a.append(modCmd);
+      }
+      return {response_type::INTEGER, std::to_string(result)};
     } else
       return {response_type::ERROR, "INVALID COMMAND"};
   }

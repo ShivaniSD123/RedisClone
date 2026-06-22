@@ -30,10 +30,7 @@ class DataStore {
  public:
   void set(const std::string& key, const std::string& value,
            long long expiryTime) {
-    auto now = std::chrono::system_clock::now();
-    long long currentTime =
-        std::chrono::duration_cast<std::chrono::seconds>(now.time_since_epoch())
-            .count();
+    long long currentTime = getCurrentTime();
     cache[key].value = value;
     if (expiryTime == -1) {
       cache[key].expiryTime = -1;
@@ -64,10 +61,7 @@ class DataStore {
     if (cache.find(key) == cache.end()) return -2;
     long long time = cache[key].expiryTime;
     if (time == -1) return (int)time;
-    auto now = std::chrono::system_clock::now();
-    long long currentTime =
-        std::chrono::duration_cast<std::chrono::seconds>(now.time_since_epoch())
-            .count();
+    long long currentTime = getCurrentTime();
 
     if (!isExpired(key)) return (int)time - currentTime;
     cache.erase(key);
@@ -79,10 +73,7 @@ class DataStore {
       cache.erase(key);
       return 0;
     }
-    auto now = std::chrono::system_clock::now();
-    long long currentTime =
-        std::chrono::duration_cast<std::chrono::seconds>(now.time_since_epoch())
-            .count();
+    long long currentTime = getCurrentTime();
     cache[key].expiryTime = currentTime + time;
     return 1;
   }

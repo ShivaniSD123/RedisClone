@@ -17,6 +17,12 @@ class AOFManager {
     for (const std::string& s : command) file << s << " ";
     file << "\n";
   }
+  long long getCurrentTime() const {
+    auto now = std::chrono::system_clock::now();
+    return std::chrono::duration_cast<std::chrono::seconds>(
+               now.time_since_epoch())
+        .count();
+  }
   void loadCommands(DataStore& store) {
     std::ifstream file("appendonly.aof");
     if (!file.is_open()) return;
@@ -29,10 +35,26 @@ class AOFManager {
         tokens.push_back(token);
       }
       if (tokens.empty()) continue;
-      if (tokens[0] == "SET" && tokens.size() >= 3) {
+      if (tokens[0] == "SET" && tokens.size() == 3) {
         store.set(tokens[1], tokens[2], -1);
+      } else if (tokens[0] == "SET" && tokens.size() == 5) {
+        long long storedExpiry = stoll(tokens[4]);
+        if (storedExpiry == -1)
+          store.set(tokens[1], tokens[2], -1);
+        else {
+          long long remaining = storedExpiry - getCurrentTime();
+          if (remaining > 0) {
+            store.set(tokens[1], tokens[2], remaining);
+          }
+        }
       } else if (tokens[0] == "DEL" && tokens.size() >= 2) {
         store.remove(tokens[1]);
+      } else if (tokens[0] == "EXPIRE" && tokens.size() == 3) {
+        if (!store.find(tokens[1])) continue;
+        long long currentTime = getCurrentTime();
+        long long time = stoll(tokens[2]);
+        long long remainingTime = time - currentTime;
+        if (remainingTime > 0) store.changeTTL(tokens[1], remainingTime);
       }
     }
   }
