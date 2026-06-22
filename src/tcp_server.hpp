@@ -43,6 +43,8 @@ class TCPServer {
     bind(server_fd, (sockaddr*)&server_addr, sizeof(server_addr));
 
     listen(server_fd, 5);
+    aof.loadCommands(store);
+    std::cout << "Loading AOF " << std::endl;
 
     std::cout << "Server listening on port " << port << "\n";
 
