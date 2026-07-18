@@ -14,3 +14,6 @@
 server
 redis_clone
 main
+
+#AOF File
+*.aof

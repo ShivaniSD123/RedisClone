@@ -1,60 +1,102 @@
 #pragma once
 
+#include <chrono>
 #include <fstream>
+#include <mutex>
 #include <sstream>
+#include <stdexcept>
 #include <string>
 #include <vector>
 
 #include "data_store.hpp"
 
 class AOFManager {
+ private:
+  std::ofstream file;
+  std::mutex fileMutex;
+
  public:
-  void append(const std::vector<std::string>& command) {
-    std::ofstream file("appendonly.aof", std::ios::app);
+  AOFManager() {
+    file.open("appendonly.aof", std::ios::app);
+
     if (!file.is_open()) {
       throw std::runtime_error("Unable to open AOF");
     }
-    for (const std::string& s : command) file << s << " ";
-    file << "\n";
   }
+
+  ~AOFManager() {
+    if (file.is_open()) {
+      file.close();
+    }
+  }
+
+  void append(const std::vector<std::string>& command) {
+    std::lock_guard<std::mutex> lock(fileMutex);
+
+    for (const auto& s : command) {
+      file << s << " ";
+    }
+
+    file << '\n';
+    file.flush();
+  }
+
   long long getCurrentTime() const {
     auto now = std::chrono::system_clock::now();
     return std::chrono::duration_cast<std::chrono::seconds>(
                now.time_since_epoch())
         .count();
   }
+
   void loadCommands(DataStore& store) {
-    std::ifstream file("appendonly.aof");
-    if (!file.is_open()) return;
+    std::ifstream input("appendonly.aof");
+
+    if (!input.is_open()) return;
+
     std::string line;
-    while (std::getline(file, line)) {
+
+    while (std::getline(input, line)) {
       std::stringstream ss(line);
+
       std::string token;
       std::vector<std::string> tokens;
+
       while (ss >> token) {
         tokens.push_back(token);
       }
+
       if (tokens.empty()) continue;
+
       if (tokens[0] == "SET" && tokens.size() == 3) {
         store.set(tokens[1], tokens[2], -1);
+
       } else if (tokens[0] == "SET" && tokens.size() == 5) {
-        long long storedExpiry = stoll(tokens[4]);
-        if (storedExpiry == -1)
+        long long storedExpiry = std::stoll(tokens[4]);
+
+        if (storedExpiry == -1) {
           store.set(tokens[1], tokens[2], -1);
-        else {
+
+        } else {
           long long remaining = storedExpiry - getCurrentTime();
+
           if (remaining > 0) {
             store.set(tokens[1], tokens[2], remaining);
           }
         }
-      } else if (tokens[0] == "DEL" && tokens.size() >= 2) {
+
+      } else if (tokens[0] == "DEL" && tokens.size() == 2) {
         store.remove(tokens[1]);
+
       } else if (tokens[0] == "EXPIRE" && tokens.size() == 3) {
         if (!store.find(tokens[1])) continue;
-        long long currentTime = getCurrentTime();
-        long long time = stoll(tokens[2]);
-        long long remainingTime = time - currentTime;
-        if (remainingTime > 0) store.changeTTL(tokens[1], remainingTime);
+
+        long long absoluteExpiry = std::stoll(tokens[2]);
+
+        long long remaining = absoluteExpiry - getCurrentTime();
+
+        if (remaining > 0) {
+          store.changeTTL(tokens[1], remaining);
+        }
       }
     }
   }
