@@ -8,7 +8,7 @@
 #include <string>
 #include <vector>
 
-#include "data_store.hpp"
+#include "../include/data_store.hpp"
 
 class AOFManager {
  private:
@@ -17,7 +17,7 @@ class AOFManager {
 
  public:
   AOFManager() {
-    file.open("appendonly.aof", std::ios::app);
+    file.open("persistence/appendonly.aof", std::ios::app);
 
     if (!file.is_open()) {
       throw std::runtime_error("Unable to open AOF");
@@ -49,9 +49,9 @@ class AOFManager {
   }
 
   void loadCommands(DataStore& store) {
-    std::ifstream input("appendonly.aof");
+    std::ifstream input("persistence/appendonly.aof");
 
-    if (!input.is_open()) return;
+    if (!input.is_open()) std::cout << "Cant open!!" << std::endl;
 
     std::string line;
 

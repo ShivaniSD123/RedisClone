@@ -4,7 +4,7 @@
 #include <unordered_map>
 #include <vector>
 
-#include "aof_manager.hpp"
+#include "../persistence/aof_manager.hpp"
 #include "data_store.hpp"
 #include "response_type.hpp"
 

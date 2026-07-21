@@ -9,11 +9,11 @@
 #include <string>
 #include <thread>
 
-#include "aof_manager.hpp"
-#include "data_store.hpp"
-#include "dispacher.hpp"
-#include "resp_parser.hpp"
-#include "serializer.hpp"
+#include "../include/data_store.hpp"
+#include "../include/dispacher.hpp"
+#include "../include/resp_parser.hpp"
+#include "../include/serializer.hpp"
+#include "../persistence/aof_manager.hpp"
 
 class TCPServer {
  private:
