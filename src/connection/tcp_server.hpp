@@ -1,6 +1,7 @@
 #pragma once
 
 #include <netinet/in.h>
+#include <netinet/tcp.h>
 #include <sys/socket.h>
 #include <unistd.h>
 
@@ -92,7 +93,7 @@ class TCPServer {
 
     // Allows immediate restart after server exits
     int opt = 1;
-    setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
+    setsockopt(server_fd, IPPROTO_TCP, TCP_NODELAY, &opt, sizeof(opt));
 
     sockaddr_in server_addr{};
     server_addr.sin_family = AF_INET;
