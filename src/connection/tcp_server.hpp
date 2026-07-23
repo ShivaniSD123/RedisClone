@@ -6,11 +6,13 @@
 
 #include <cstring>
 #include <iostream>
+#include <queue>
 #include <string>
 #include <thread>
 
 #include "../include/data_store.hpp"
 #include "../include/dispacher.hpp"
+#include "../include/multi_access.hpp"
 #include "../include/resp_parser.hpp"
 #include "../include/serializer.hpp"
 #include "../persistence/aof_manager.hpp"
@@ -68,13 +70,17 @@ class TCPServer {
   }
 
  public:
+  ThreadPool pool;
+
   TCPServer(int port)
       : port(port),
         store(),
         aof(),
         parser(),
         dispatcher(store, aof),
-        serializer() {}
+        serializer(),
+        pool(std::thread::hardware_concurrency(),
+             [this](int client) { handleClient(client); }) {}
 
   void start() {
     int server_fd = socket(AF_INET, SOCK_STREAM, 0);
@@ -120,7 +126,7 @@ class TCPServer {
 
       std::cout << "Client connected." << std::endl;
 
-      std::thread(&TCPServer::handleClient, this, client_fd).detach();
+      pool.enqueue(client_fd);
     }
 
     close(server_fd);
