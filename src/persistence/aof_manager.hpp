@@ -17,7 +17,7 @@ class AOFManager {
 
  public:
   AOFManager() {
-    file.open("persistence/appendonly.aof", std::ios::app);
+    file.open("src/persistence/appendonly.aof", std::ios::app);
 
     if (!file.is_open()) {
       throw std::runtime_error("Unable to open AOF");
@@ -49,7 +49,7 @@ class AOFManager {
   }
 
   void loadCommands(DataStore& store) {
-    std::ifstream input("persistence/appendonly.aof");
+    std::ifstream input("src/persistence/appendonly.aof");
 
     if (!input.is_open()) std::cout << "Cant open!!" << std::endl;
 
